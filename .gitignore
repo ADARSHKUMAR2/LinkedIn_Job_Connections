@@ -72,3 +72,4 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 backend/.env
+backend/.env
