@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import engine, Base
+from app.models.connection import LinkedInConnection
+from app.models.job import JobListing
 
 # Dynamic initialization of schema blueprints
 Base.metadata.create_all(bind=engine)
