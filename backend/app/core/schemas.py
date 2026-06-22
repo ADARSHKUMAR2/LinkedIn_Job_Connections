@@ -26,3 +26,8 @@ class MatcherFilterConfig(BaseModel):
     target_location: Optional[str] = Field(None, description="Filter jobs by specific city/country (e.g., 'Gurugram', 'Remote').")
     target_company: Optional[str] = Field(None, description="Explicitly search for matches against a single target employer.")
     min_connections: int = Field(default=1, description="Minimum connections threshold before a job is considered.")
+
+class OutreachDraftResult(BaseModel):
+    """Holds the AI-generated personalized networking text copy."""
+    subject_line: Optional[str] = Field(None, description="A compelling, professional subject line for email use cases.")
+    message_body: str = Field(..., description="The highly personalized body text tailored to the connection and position.")

@@ -1,14 +1,15 @@
 import sys
 from app.core.schemas import MatchInputSchema, MatcherFilterConfig  
 from app.services.ai_engine import execute_llm_matchmaking
+from app.models.connection import LinkedInConnection
+from app.models.job import JobListing
+from app.core.database import SessionLocal
 
 def calculate_matches(db, user_config: MatcherFilterConfig = None):
     """
     Service Layer: Fetches database elements dynamically based on user filters,
     and passes scoped arrays to the isolated AI engine wrapper script.
     """
-    from app.models.connection import LinkedInConnection
-    from app.models.job import JobListing
 
     # If no config is passed from the router, instantiate an empty default filter state
     if user_config is None:
@@ -102,7 +103,6 @@ def calculate_matches_fallback(connections, jobs):
     return matched_results
 
 def run_matchmaker_loop():
-    from app.core.database import SessionLocal
     db = SessionLocal()
     
     # 🆕 SIMULATE CUSTOM USER FILTERS:
