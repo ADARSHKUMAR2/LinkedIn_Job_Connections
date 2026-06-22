@@ -12,14 +12,25 @@ from app.models.job import JobListing
 from app.api.matches import router as matches_router
 from app.api.connections import router as connections_router  
 from app.api.jobs import router as jobs_router
+from app.services.scheduler import start_automated_cron_jobs, shutdown_automated_cron_jobs
+from contextlib import asynccontextmanager
 
 # Dynamic initialization of schema blueprints
 Base.metadata.create_all(bind=engine)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 🚀 Startup Phase: Boot the background worker loop
+    start_automated_cron_jobs()
+    yield
+    # 🛑 Teardown Phase: Safely close worker execution threads
+    shutdown_automated_cron_jobs()
+
 app = FastAPI(
     title="LinkHunter-AI Backend Gateway",
     version="1.0.0",
-    description="Scalable automation data infrastructure & semantic evaluation engine."
+    description="Scalable automation data infrastructure & semantic evaluation engine.",
+    lifespan=lifespan
 )
 
 app.include_router(matches_router)

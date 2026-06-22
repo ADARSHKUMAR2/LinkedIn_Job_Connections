@@ -4,6 +4,7 @@ from app.services.ai_engine import execute_llm_matchmaking
 from app.models.connection import LinkedInConnection
 from app.models.job import JobListing
 from app.core.database import SessionLocal
+from app.services.ai_cache_handler import calculate_payload_hash, get_cached_matches, set_cached_matches
 
 def calculate_matches(db, user_config: MatcherFilterConfig = None):
     """
@@ -38,6 +39,17 @@ def calculate_matches(db, user_config: MatcherFilterConfig = None):
     if not connections or not jobs:
         print("⚠️ Matchmaking skipped: No records matched your filter settings in the database.")
         return []
+
+    # ──────────────────────────────────────────────────────────────────
+    # 💾 NEW: CACHE CHECK LIFECYCLE STEP
+    # Calculate hash signature based strictly on the fetched raw rows
+    payload_hash = calculate_payload_hash(connections, jobs)
+    
+    # Look for matching cached list items in the database table
+    cached_results = get_cached_matches(db, payload_hash)
+    if cached_results is not None:
+        return cached_results
+    # ──────────────────────────────────────────────────────────────────
 
     # 2. Package database records into structured dictionary format
     network_data = [
@@ -82,6 +94,11 @@ def calculate_matches(db, user_config: MatcherFilterConfig = None):
                 "Contact Position": c_obj.position,
                 "Application Link": j_obj.apply_link or "No Link Available"
             })
+    
+    # ──────────────────────────────────────────────────────────────────
+    # 💾 NEW: PERSIST FRESHLY COMPUTED RESULTS TO CACHE
+    set_cached_matches(db, payload_hash, matched_results)
+    # ──────────────────────────────────────────────────────────────────
     
     return matched_results
 
