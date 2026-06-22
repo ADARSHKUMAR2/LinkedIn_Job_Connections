@@ -5,87 +5,107 @@ from dotenv import load_dotenv
 from sqlalchemy.exc import IntegrityError
 from app.core.database import SessionLocal
 from app.models.job import JobListing
+from sqlalchemy.dialects.postgresql import insert
 
 # Load environmental state keys
 load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"))
 
-RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
-if not RAPIDAPI_KEY:
-    raise ValueError("CRITICAL ERROR: RAPIDAPI_KEY environmental variable is missing from your configuration.")
+RAPID_API_KEY = os.getenv("RAPID_API_KEY")
+if not RAPID_API_KEY:
+    raise ValueError("CRITICAL ERROR: RAPID_API_KEY environmental variable is missing from your configuration.")
 
-def fetch_and_sync_jobs(search_query: str = "Software Engineer", location: str = "United States", pages: int = 1):
-    print("==================================================================")
-    print(f"📡 Querying JSearch Gateway for: '{search_query}' in '{location}'")
-    print("==================================================================")
-
+def fetch_and_sync_jobs(search_query: str = "Software Engineer", location: str = "India"):
+    """
+    Queries the external JSearch gateway via RapidAPI, parses incoming 
+    payload frames, and syncs data idempotently into Supabase.
+    """
     url = "https://jsearch.p.rapidapi.com/search"
+    
+    # Retrieve tokens from runtime environment
+    rapid_api_key = os.getenv("RAPID_API_KEY")
+    if not rapid_api_key:
+        print("❌ CRITICAL ERROR: 'RAPID_API_KEY' is missing from your .env environment variables.", file=sys.stderr)
+        return
+
     headers = {
-        "X-RapidAPI-Key": RAPIDAPI_KEY,
+        "X-RapidAPI-Key": rapid_api_key,
         "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
     }
     
-    # Combined intent parameter matching what JSearch reads best
-    full_query = f"{search_query} in {location}"
-    
-    params = {
-        "query": full_query,
-        "page": str(pages),
+    # Query structure targeted at highly specialized developer roles
+    querystring = {
+        "query": f"{search_query} in {location}", 
         "num_pages": "1",
-        "date_posted": "week" # Restrict lookup to fresh positions posted this week
+        "date_posted": "all"
     }
-
-    try:
-        response = requests.get(url, headers=headers, params=params, timeout=15)
-        response.raise_for_status()
-        data = response.json()
-    except Exception as network_err:
-        print(f"❌ HTTP ROUTING FAILURE: Unable to contact RapidAPI endpoint.\nDetails: {network_err}", file=sys.stderr)
-        return
-
-    job_records = data.get("data", [])
-    if not job_records:
-        print("⚠️  API Response returned a clean state but zero matching active roles.")
-        return
-
+    
     db = SessionLocal()
-    added_jobs = 0
-    duplicate_jobs = 0
-
+    
     try:
-        print(f"🚀 Found {len(job_records)} job payloads. Streaming metrics to Supabase...")
-        for job in job_records:
-            # Safely parse out only what our engine tracking tables need
-            job_id = job.get("job_id")
-            if not job_id:
+        print(f"📡 Dispatching HTTP request to JSearch gateway: [{search_query}] in [{location}]...")
+        
+        # Extended timeout set to 30s to mitigate external gateway bottlenecks safely
+        response = requests.get(url, headers=headers, params=querystring, timeout=30)
+        response.raise_for_status()
+        
+        payload = response.json()
+        job_records = payload.get("data", [])
+        
+        print(f"📦 JSearch data chunk returned. Processing {len(job_records)} payload rows...")
+        
+        sync_count = 0
+        for raw_job in job_records:
+            job_platform_id = raw_job.get("job_id")
+            if not job_platform_id:
                 continue
+            
+            # Format city, state, country into a unified string schema matching your data layout
+            city = raw_job.get("job_city")
+            state = raw_job.get("job_state")
+            country = raw_job.get("job_country", "IN")
+            
+            location_components = [c for c in [city, state, country] if c]
+            formatted_location = ", ".join(location_components) if location_components else "Remote"
 
-            new_job = JobListing(
-                job_id=job_id,
-                title=job.get("job_title", "Unknown Role"),
-                company=job.get("employer_name", "Unknown Company"),  
-                location=f"{job.get('job_city', '')}, {job.get('job_state', '')} {job.get('job_country', '')}".strip(", "),
-                description=job.get("job_description"),
-                apply_link=job.get("job_apply_link")                  
+            # 1. Prepare raw insert mapping
+            insert_stmt = insert(JobListing).values(
+                job_id=job_platform_id,
+                title=raw_job.get("job_title", "Untitled Position"),
+                company=raw_job.get("employer_name", "Unknown Corporate Entity"),
+                location=formatted_location,
+                apply_link=raw_job.get("job_apply_link")
             )
-
-            try:
-                db.add(new_job)
-                db.commit()
-                added_jobs += 1
-            except IntegrityError:
-                db.rollback()
-                duplicate_jobs += 1
-            except Exception:
-                db.rollback()
-
-        print("\n🎉 LIVE MARKET CAPTURE COMPLETE:")
-        print(f"   💼 New Open Positions Ingested: {added_jobs}")
-        print(f"   ⚠️  Skipped Duplicate Jobs:      {duplicate_jobs}")
-
+            
+            # 2. Convert declaration into an Idempotent Upsert pattern
+            # If the job_id unique key index exists, override metrics instead of raising an IntegrityError
+            upsert_stmt = insert_stmt.on_conflict_do_update(
+                index_elements=['job_id'],
+                set_={
+                    "title": insert_stmt.excluded.title,
+                    "company": insert_stmt.excluded.company,
+                    "location": insert_stmt.excluded.location,
+                    "apply_link": insert_stmt.excluded.apply_link
+                }
+            )
+            
+            db.execute(upsert_stmt)
+            sync_count += 1
+            
+        # Safely commit bulk transformations inside a singular database transaction window
+        db.commit()
+        print(f"✅ State Sync Finished: {sync_count} rows verified and merged cleanly into Supabase tables.")
+        
+    except requests.exceptions.Timeout:
+        print("❌ HTTP ROUTING FAILURE: Connection to RapidAPI timed out (threshold 30s). Try again.", file=sys.stderr)
+    except requests.exceptions.RequestException as req_err:
+        print(f"❌ REQ ENGINE ERROR: Unable to contact RapidAPI platform: {req_err}", file=sys.stderr)
+    except Exception as db_err:
+        db.rollback()
+        print(f"❌ STORAGE TRANSACTION ROLLBACK: Pipeline encountered database engine error: {db_err}", file=sys.stderr)
     finally:
         db.close()
-        print("==================================================================")
 
+# Local Sandbox Test Access Hook
 if __name__ == "__main__":
-    # Test execution parameters to pull mock openings for HighLevel and Google matching our sample CSV entries
-    fetch_and_sync_jobs(search_query="AI Engineer", location="India")
+    print("🧪 Running local sandbox scraper routine initialization...")
+    fetch_and_sync_jobs(search_query="AI ML Engineer", location="Remote")
