@@ -15,6 +15,16 @@ stages:
   - job: RunBackendChecks
     pool:
       vmImage: 'ubuntu-latest'
+    services:
+      postgres_db:
+        image: postgres:15
+        env:
+          POSTGRES_USER: mock_user
+          POSTGRES_PASSWORD: mock_password
+          POSTGRES_DB: mock_db
+        ports:
+        - 5432:5432
+
     steps:
     - task: UsePythonVersion@0
       inputs:
@@ -34,11 +44,14 @@ stages:
 
     - script: |
         cd backend
-        # Run Alembic offline script check to ensure schemas compile without broken syntax
+        # 🆕 Run migrations to bring the empty container up to speed before checking models
+        uv run alembic upgrade head
+        # Run Alembic structural check against the migrated schema matrix
         uv run alembic check
       displayName: 'Validate Database Migrations Map Consistency'
       env:
-        DATABASE_URL: 'postgresql://mock_user:mock_pass@localhost:5432/mock_db'
+        # Target the running container instance securely
+        DATABASE_URL: 'postgresql://mock_user:mock_password@localhost:5432/mock_db'
 
 - stage: ValidateFrontend
   displayName: 'Compile Next.js Production Build'
