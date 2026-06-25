@@ -15,6 +15,8 @@ stages:
   - job: RunBackendChecks
     pool:
       vmImage: 'ubuntu-latest'
+    
+    # 🆕 Spin up a localized Postgres instance for Alembic to talk to
     services:
       postgres_db:
         image: postgres:15
@@ -44,13 +46,13 @@ stages:
 
     - script: |
         cd backend
-        # 🆕 Run migrations to bring the empty container up to speed before checking models
+        # 🆕 Apply migrations to the fresh container database first
         uv run alembic upgrade head
-        # Run Alembic structural check against the migrated schema matrix
+        # Run the structural diff validation check
         uv run alembic check
       displayName: 'Validate Database Migrations Map Consistency'
       env:
-        # Target the running container instance securely
+        # Route SQLAlchemy straight to our service container instance
         DATABASE_URL: 'postgresql://mock_user:mock_password@localhost:5432/mock_db'
 
 - stage: ValidateFrontend
