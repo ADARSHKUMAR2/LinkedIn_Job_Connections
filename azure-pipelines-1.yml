@@ -1,0 +1,58 @@
+trigger:
+  branches:
+    include:
+    - main
+
+pr:
+  branches:
+    include:
+    - main
+
+stages:
+- stage: ValidateBackend
+  displayName: 'Lint & Test Python Backend'
+  jobs:
+  - job: RunBackendChecks
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.11'
+      displayName: 'Provision Python 3.11'
+
+    - script: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "##vso[task.prependpath]$HOME/.local/bin"
+      displayName: 'Install Astral uv Package Manager'
+
+    - script: |
+        cd backend
+        uv venv
+        uv pip install -e .
+      displayName: 'Compile Project Virtual Environment'
+
+    - script: |
+        cd backend
+        # Run Alembic offline script check to ensure schemas compile without broken syntax
+        uv run alembic check
+      displayName: 'Validate Database Migrations Map Consistency'
+
+- stage: ValidateFrontend
+  displayName: 'Compile Next.js Production Build'
+  dependsOn: ValidateBackend
+  jobs:
+  - job: RunFrontendChecks
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '20.x'
+      displayName: 'Provision Node.js v20'
+
+    - script: |
+        cd frontend
+        npm install --legacy-peer-deps
+        npm run build
+      displayName: 'Execute Production Next.js Compiler Check'
