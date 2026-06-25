@@ -15,7 +15,7 @@ pool:
 
 variables:
   # In a production environment, these should be stored in an Azure DevOps Variable Group
-  azureServiceConnection: 'MyAzureServiceConnection'
+  azureServiceConnection: 'Linkedin-COnnection'
   containerRegistry: 'myregistry.azurecr.io'
   imageRepository: 'linkedin-backend'
   containerAppName: 'linkedin-connections-backend'
