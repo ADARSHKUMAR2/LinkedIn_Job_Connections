@@ -1,19 +1,19 @@
 # LinkHunter-AI 🚀
 ### Autonomous Network Parsing & Job Intelligence Engine
 
-LinkHunter-AI is a full-stack, decoupled data intelligence application designed to convert your professional network records and automated public job marketplace listings into an actionable, referral-ready outreach dashboard. 
-
-By bypassing the traditional corporate recruitment funnel, the system targets high-ticket B2B consulting roles and warm-referral warm paths through programmatic data mining, serverless data pipeline execution, and semantic LLM matchmaking.
+LinkHunter-AI is a full-stack, decoupled data intelligence platform that transforms your LinkedIn professional network and automated job marketplace listings into an actionable, referral-ready outreach dashboard. The system targets high-ticket B2B consulting roles and warm-referral pathways through programmatic data mining, LLM-powered semantic matchmaking, and serverless pipeline automation.
 
 ---
 
-## 🗺️ System Implementation Roadmap
+## 🗺️ Implementation Status
 
-- **[PHASE 1]** Core Architecture & Setup
-  -  └── *Next Step* ➔ **[PHASE 2]** Data Ingestion & Pipelines
-      -  └── *Next Step* ➔ **[PHASE 3]** Frontend Application Layer
-          -  └── *Next Step* ➔ **[PHASE 4]** AI Matchmaking Core
-              -  └── *Final Step* ➔ **[PHASE 5]** CI/CD & Cloud Automation
+| Phase | Status |
+|-------|--------|
+| **Phase 1** — Core Architecture & Setup | ✅ Complete |
+| **Phase 2** — Data Ingestion & Pipelines | ✅ Complete |
+| **Phase 3** — Frontend Application Layer | ✅ Complete |
+| **Phase 4** — AI Matchmaking Core | ✅ Complete |
+| **Phase 5** — CI/CD & Cloud Automation | ✅ Complete |
 
 ---
 
@@ -21,95 +21,127 @@ By bypassing the traditional corporate recruitment funnel, the system targets hi
 
 ```mermaid
 graph TD
-    %% Define Style Classes for High Visual Scannability
     classDef phase1 fill:#ffe3e3,stroke:#cc0000,stroke-width:2px;
     classDef phase2 fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px;
     classDef phase3 fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
     classDef phase4 fill:#fff3e0,stroke:#e65100,stroke-width:2px;
     classDef phase5 fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
-    classDef storage fill:#fffde7,stroke:#f57f17,stroke-width:1px,stroke-dasharray: 5 5;
 
-    %% Storage Layer Component Nodes
-    subgraph Storage [Storage & Artifact Matrices]
-        CSV[LinkedIn Connection CSV]:::storage
-        API_Data[RapidAPI / JSearch Feed]:::storage
-        Postgres[(PostgreSQL Cloud: Supabase/Neon)]:::storage
-        Excel[target_jobs.xlsx Workbook]:::storage
+    subgraph Backend ["FastAPI Backend (Phase 1-2)"]
+        MA["main.py<br/>Entry point + CORS"]:::phase1
+        DB["database.py<br/>Session pool"]:::phase1
+        LG["logger.py<br/>Rich logging"]:::phase1
+        SC["schemas.py<br/>Pydantic validation"]:::phase1
+        MG["Alembic<br/>Migrations"]:::phase1
+        CP["csv_parser.py<br/>Connection CSV ingestion"]:::phase2
+        JS["job_scraper.py<br/>RapidAPI / JSearch"]:::phase2
+        EE["excel_exporter.py<br/>Excel output"]:::phase2
     end
 
-    %% Phase 1
-    subgraph P1 [Phase 1: Core Architecture & Local Storage Layer]
-        UV[uv Python Workspace]
-        Env[.env Secrets Core]
-        DB_Py[database.py Session Pool]
-        Alembic[Alembic Migrations / env.py]
+    subgraph AI ["AI Intelligence Layer (Phase 4)"]
+        AM["ai_matcher.py<br/>Match coordinator"]:::phase4
+        AE["ai_engine.py<br/>LLM execution"]:::phase4
+        AC["ai_client.py<br/>API client"]:::phase4
+        AH["ai_cache_handler.py<br/>Cache management"]:::phase4
+        AD["ai_drafter.py<br/>Message drafting"]:::phase4
     end
-    class P1 phase1;
 
-    %% Phase 2
-    subgraph P2 [Phase 2: Ingestion Engines & Data Normalization]
-        Setup[setup.py Initialization]
-        Schema[linkedin_connections Schema]
-        ImportConn[import_connections.py]
-        JobHunter[job_hunter.py Client]
-        PandasEngine[Pandas + OpenPyXL Engine]
+    subgraph Frontend ["Next.js Frontend (Phase 3)"]
+        NP["pages<br/>Connections / Jobs / Matches"]:::phase3
+        SH["shadcn/ui<br/>Component library"]:::phase3
+        RT["@tanstack/react-table<br/>Data tables"]:::phase3
+        RC["recharts<br/>Analytics"]:::phase3
     end
-    class P2 phase2;
 
-    %% Phase 3
-    subgraph P3 [Phase 3: Frontend Application Layer]
-        NextApp[Next.js App: TS + Tailwind]
-        Shadcn[shadcn-ui Components]
-        ReactTable["@tanstack/react-table Display"]
-        TremorUI[Tremor Analytics Engine]
+    subgraph CI_CD ["CI/CD Pipeline (Phase 5)"]
+        CI["ci-pipeline.yml<br/>Lint + Build + Migrate"]:::phase5
+        CD["cd-pipeline.yml<br/>Docker + Deploy"]:::phase5
+        DK["Dockerfile<br/>Containerization"]:::phase5
     end
-    class P3 phase3;
 
-    %% Phase 4
-    subgraph P4 [Phase 4: AI Intelligence & Matchmaking Layer]
-        Matcher[matcher.py Coordinator]
-        Prompt[Structured Prompt Template]
-        LLM[LLM API: Gemini Flash / OpenAI]
-    end
-    class P4 phase4;
+    CSV[(LinkedIn CSV)] --> CP
+    API[(RapidAPI Jobs)] --> JS
+    CP --> DB[(PostgreSQL)]
+    JS --> EE[(target_jobs.xlsx)]
+    DB --> AM
+    EE --> AM
+    AM --> AE
+    AE --> AC
+    AH --> AM
+    AD --> AM
+    DB --> NP
+    EE --> NP
+    CI --> CD
+    CD --> DK
+```
 
-    %% Phase 5
-    subgraph P5 [Phase 5: CI/CD, Serverless Deployment, & Optimization]
-        Docker[Dockerfile: Multi-stage Build]
-        Serverless[Google Cloud Run / AWS Lambda]
-        Cron[Cloud Scheduler / EventBridge]
-    end
-    class P5 phase5;
+---
 
-    %% Operational Pipelines & Control Flows
-    UV --> P1
-    Env -->|Exposes Variables| DB_Py
-    Env -->|Hydrates| Alembic
-    Setup -->|Builds Constraints| Schema
-    Schema -->|Executes Against| Postgres
-    Alembic -->|Pushes Structural Migrations| Postgres
-    CSV -->|Read & Tokenized By| ImportConn
-    ImportConn -->|Bulk Ingestion Loop| Postgres
-    API_Data -->|Programmatic REST Sucking| JobHunter
-    Env -->|Injects RAPIDAPI_KEY| JobHunter
-    JobHunter -->|Clean JSON Arrays| PandasEngine
-    PandasEngine -->|Saves Structured File| Excel
-    Postgres -->|Queries Unique Connection Rows| Matcher
-    Excel -->|Parses Open Job Target Listings| Matcher
-    Prompt -->|Contextual Instructions| Matcher
-    Matcher <-->|Semantic Matching Loops| LLM
-    Matcher -->|Writes Back Internal Referrals Field| Excel
-    Postgres -->|Hydrates Connection Grids| ReactTable
-    Excel -->|Hydrates Aggregated Open Jobs| ReactTable
-    ReactTable -->|Renders Client Side Filters| NextApp
-    TremorUI -->|Visualizes Company Densities & Pipelines| NextApp
-    Shadcn -->|Composes Theme & Shell System| NextApp
-    Docker -->|Compiles Deployment Artifact Bundle| Serverless
-    Cron -->|Daily Cron Heartbeat Trigger 08:00 AM| Serverless
-    Serverless -->|Automates Pipeline Job Hunting Run| JobHunter
-    Serverless -->|Automates Data Cross Match Processing| Matcher
+## 📁 Project Structure
 
 ```
+LinkHunter-AI/
+├── backend/                          # Python FastAPI backend
+│   ├── app/
+│   │   ├── main.py                   # FastAPI entry point, CORS, error handling
+│   │   ├── api/                      # REST API routers
+│   │   │   ├── connections.py        # Connection CRUD endpoints
+│   │   │   ├── jobs.py               # Job listing endpoints
+│   │   │   └── matches.py            # AI matchmaking endpoints
+│   │   ├── core/                     # Core infrastructure
+│   │   │   ├── database.py           # SQLAlchemy session management
+│   │   │   ├── schemas.py            # Pydantic validation schemas
+│   │   │   ├── logger.py             # Rich console logging
+│   │   │   └── ai_client.py          # LLM API client wrapper
+│   │   ├── models/                   # SQLAlchemy ORM models
+│   │   │   ├── connection.py         # LinkedIn connection model
+│   │   │   ├── job.py                # Job listing model
+│   │   │   └── cache.py              # Match cache model
+│   │   ├── services/                 # Business logic
+│   │   │   ├── csv_parser.py         # CSV → database ingestion
+│   │   │   ├── job_scraper.py        # RapidAPI job fetching
+│   │   │   ├── excel_exporter.py     # Excel workbook output
+│   │   │   ├── ai_matcher.py         # Matchmaking coordinator
+│   │   │   ├── ai_engine.py          # LLM prompt execution
+│   │   │   ├── ai_cache_handler.py   # Match result caching
+│   │   │   ├── ai_drafter.py         # Referral message drafting
+│   │   │   └── scheduler.py          # Automated cron jobs
+│   │   └── routers/                  # Additional route handlers
+│   ├── migrations/                   # Alembic database migrations
+│   │   └── versions/                 # Migration scripts
+│   ├── Dockerfile                    # Multi-stage container build
+│   └── pyproject.toml                # Python project config
+│
+├── frontend/                         # Next.js frontend
+│   ├── app/                          # Pages (Next.js App Router)
+│   │   ├── connections/              # Connection management page
+│   │   ├── jobs/                     # Job listings page
+│   │   └── matches/                  # AI match results page
+│   ├── components/                   # React components
+│   │   ├── layout/                   # Header, sidebar
+│   │   └── ui/                       # shadcn/ui primitives
+│   └── lib/                          # Utilities
+│       ├── api.ts                    # API client configuration
+│       └── utils.ts                  # Helper functions
+│
+├── ci-pipeline.yml                   # Azure DevOps CI pipeline
+├── cd-pipeline.yml                   # Azure DevOps CD pipeline
+└── architecture.md                   # Detailed architecture spec
+```
+
+---
+
+## ✨ Key Features
+
+- **📥 Connection Ingestion** — Parse LinkedIn connection CSV exports into a normalized PostgreSQL schema with duplicate detection
+- **🔍 Job Scraping** — Fetch live job listings via RapidAPI / JSearch API with structured output to Excel
+- **🧠 AI Matchmaking** — Semantic LLM evaluation (Gemini Flash / OpenAI) to identify referral pathways between your network and open roles
+- **💬 AI Message Drafting** — Generate personalized referral request messages for matched connections
+- **⚡ Smart Caching** — Cache match results by payload hash to avoid redundant LLM calls
+- **📊 Dashboard UI** — Full Next.js frontend with data tables, analytics charts, and dark mode
+- **🔄 Automated Pipelines** — Background scheduler for periodic job scraping and match processing
+- **🚀 CI/CD** — Azure DevOps pipelines with automated testing, Docker build, and deployment
+- **🐳 Containerized** — Multi-stage Docker build for production deployment to Cloud Run / Azure Container Apps
 
 ---
 
@@ -119,25 +151,112 @@ graph TD
 
 - **Python 3.12+** with [uv](https://docs.astral.sh/uv/) installed
 - **Node.js 20+** with npm
+- **PostgreSQL** database (local or cloud via Supabase/Neon)
 
-### Terminal 1 — Backend (FastAPI)
+### Backend Setup
 
 ```bash
+# Navigate to backend directory
 cd backend
-cp .env.example .env        # Configure your environment variables
-uv sync                     # Install Python dependencies
-uv run alembic upgrade head # Run database migrations
-uv run fastapi dev          # Start the API server (default: http://localhost:8000)
+
+# Configure environment
+cp .env.example .env          # Edit with your DATABASE_URL, API keys, etc.
+
+# Install Python dependencies
+uv sync
+
+# Run database migrations
+uv run alembic upgrade head
+
+# Seed test data (optional)
+uv run python seed_test_data.py
+
+# Start the API server (default: http://localhost:8000)
+uv run fastapi dev
 ```
 
-### Terminal 2 — Frontend (Next.js)
+### Frontend Setup
 
 ```bash
+# Navigate to frontend directory (separate terminal)
 cd frontend
-npm install                 # Install Node dependencies
-npm run dev                 # Start the dev server (default: http://localhost:3000)
+
+# Install Node dependencies
+npm install
+
+# Configure environment
+cp .env.local.example .env.local   # Set NEXT_PUBLIC_API_URL
+
+# Start the dev server (default: http://localhost:3000)
+npm run dev
+```
+
+### API Endpoints
+
+Once running, the backend exposes these REST endpoints:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/` | Health check |
+| `GET` | `/connections/` | List all connections |
+| `POST` | `/connections/upload` | Upload connection CSV |
+| `GET` | `/jobs/` | List all job listings |
+| `POST` | `/jobs/scrape` | Trigger job scraping |
+| `GET` | `/matches/` | Get AI match results |
+| `POST` | `/matches/run` | Execute matchmaking |
+
+---
+
+## 🐳 Docker Deployment
+
+```bash
+# Build the Docker image
+docker build -t linkhunter-backend ./backend
+
+# Run the container
+docker run -p 8000:8000 \
+  -e DATABASE_URL=postgresql://user:pass@host/db \
+  -e RAPIDAPI_KEY=your_key \
+  -e LLM_API_KEY=your_key \
+  linkhunter-backend
 ```
 
 ---
 
-The backend API gateway serves at `http://localhost:8000` and the frontend dev server at `http://localhost:3000`. Ensure both terminals are running simultaneously for the full-stack application to work.
+## 🔄 CI/CD Pipelines
+
+The project includes Azure DevOps YAML pipelines:
+
+- **CI Pipeline** (`ci-pipeline.yml`): Runs on PRs and commits to `main`
+  - Backend: Provisions PostgreSQL, installs dependencies, runs Alembic migrations, validates schema
+  - Frontend: Installs Node packages, runs production build check
+
+- **CD Pipeline** (`cd-pipeline.yml`): Triggered on successful CI completion
+  - Builds Docker image and pushes to Azure Container Registry
+  - Deploys to Azure Container Apps
+
+---
+
+## 🧰 Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Backend Framework** | FastAPI (Python) |
+| **ORM** | SQLAlchemy 2.0 |
+| **Migrations** | Alembic |
+| **Validation** | Pydantic v2 |
+| **Frontend** | Next.js 16 (App Router) |
+| **UI Components** | shadcn/ui, Tailwind CSS 4 |
+| **Data Tables** | @tanstack/react-table |
+| **Charts** | Recharts |
+| **Database** | PostgreSQL (Supabase / Neon) |
+| **LLM** | Gemini Flash / OpenAI API |
+| **Container** | Docker (multi-stage build) |
+| **CI/CD** | Azure DevOps Pipelines |
+| **Package Manager** | uv (Python), npm (Node) |
+
+---
+
+## 📄 License
+
+MIT
