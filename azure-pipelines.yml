@@ -37,6 +37,8 @@ stages:
         # Run Alembic offline script check to ensure schemas compile without broken syntax
         uv run alembic check
       displayName: 'Validate Database Migrations Map Consistency'
+      env:
+        DATABASE_URL: 'postgresql://mock_user:mock_pass@localhost:5432/mock_db'
 
 - stage: ValidateFrontend
   displayName: 'Compile Next.js Production Build'
