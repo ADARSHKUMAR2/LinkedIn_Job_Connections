@@ -1,19 +1,58 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
-- main
+  branches:
+    include:
+    - main
 
-pool:
-  vmImage: ubuntu-latest
+pr:
+  branches:
+    include:
+    - main
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+stages:
+- stage: ValidateBackend
+  displayName: 'Lint & Test Python Backend'
+  jobs:
+  - job: RunBackendChecks
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.11'
+      displayName: 'Provision Python 3.11'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+    - script: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "##vso[task.prependpath]$HOME/.local/bin"
+      displayName: 'Install Astral uv Package Manager'
+
+    - script: |
+        cd backend
+        uv venv
+        uv pip install -e .
+      displayName: 'Compile Project Virtual Environment'
+
+    - script: |
+        cd backend
+        # Run Alembic offline script check to ensure schemas compile without broken syntax
+        uv run alembic check
+      displayName: 'Validate Database Migrations Map Consistency'
+
+- stage: ValidateFrontend
+  displayName: 'Compile Next.js Production Build'
+  dependsOn: ValidateBackend
+  jobs:
+  - job: RunFrontendChecks
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '20.x'
+      displayName: 'Provision Node.js v20'
+
+    - script: |
+        cd frontend
+        npm install --legacy-peer-deps
+        npm run build
+      displayName: 'Execute Production Next.js Compiler Check'
