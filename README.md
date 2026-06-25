@@ -111,4 +111,33 @@ graph TD
 
 ```
 
+---
 
+## 🚀 Running the Project
+
+### Prerequisites
+
+- **Python 3.12+** with [uv](https://docs.astral.sh/uv/) installed
+- **Node.js 20+** with npm
+
+### Terminal 1 — Backend (FastAPI)
+
+```bash
+cd backend
+cp .env.example .env        # Configure your environment variables
+uv sync                     # Install Python dependencies
+uv run alembic upgrade head # Run database migrations
+uv run fastapi dev          # Start the API server (default: http://localhost:8000)
+```
+
+### Terminal 2 — Frontend (Next.js)
+
+```bash
+cd frontend
+npm install                 # Install Node dependencies
+npm run dev                 # Start the dev server (default: http://localhost:3000)
+```
+
+---
+
+The backend API gateway serves at `http://localhost:8000` and the frontend dev server at `http://localhost:3000`. Ensure both terminals are running simultaneously for the full-stack application to work.
