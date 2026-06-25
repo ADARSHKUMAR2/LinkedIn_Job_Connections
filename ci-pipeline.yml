@@ -1,3 +1,6 @@
+# Set an explicit pipeline name so the CD pipeline can reference it by this name
+name: ci-pipeline
+
 trigger:
   branches:
     include:
