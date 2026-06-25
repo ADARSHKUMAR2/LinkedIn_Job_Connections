@@ -21,3 +21,11 @@ dependencies = [
     "rich>=15.0.0",
     "sqlalchemy>=2.0.51",
 ]
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+# 🆕 Add this block to explicitly configure discovery rules
+[tool.setuptools.packages.find]
+include = ["app*"]  # Only package the app folder and its submodules
+exclude = ["migrations*"]  # Explicitly prevent migrations from being treated as a library package
