@@ -1,0 +1,47 @@
+trigger: none # Disable standard commit triggers
+
+# Listen for the CI pipeline to finish successfully
+resources:
+  pipelines:
+  - pipeline: ci_build                  # An internal variable name for this resource
+    source: 'ci-pipeline'               # IMPORTANT: This must exactly match the name of your CI pipeline inside Azure DevOps
+    trigger:
+      branches:
+        include:
+          - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  # In a production environment, these should be stored in an Azure DevOps Variable Group
+  azureServiceConnection: 'MyAzureServiceConnection'
+  containerRegistry: 'myregistry.azurecr.io'
+  imageRepository: 'linkedin-backend'
+  containerAppName: 'linkedin-connections-backend'
+  resourceGroup: 'my-resource-group'
+
+steps:
+- task: Docker@2
+  displayName: 'Build and Push Docker Image to ACR'
+  inputs:
+    command: 'buildAndPush'
+    containerRegistry: '$(azureServiceConnection)'
+    repository: '$(imageRepository)'
+    dockerfile: 'backend/Dockerfile'
+    tags: |
+      $(Build.BuildId)
+      latest
+
+- task: AzureCLI@2
+  displayName: 'Deploy to Azure Container Apps'
+  inputs:
+    azureSubscription: '$(azureServiceConnection)'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      echo "Deploying image $(containerRegistry)/$(imageRepository):$(Build.BuildId)"
+      az containerapp update \
+        --name $(containerAppName) \
+        --resource-group $(resourceGroup) \
+        --image $(containerRegistry)/$(imageRepository):$(Build.BuildId)
