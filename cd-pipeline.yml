@@ -1,10 +1,9 @@
-trigger: none # Disable standard commit triggers
+trigger: none 
 
-# Listen for the CI pipeline to finish successfully
 resources:
   pipelines:
-  - pipeline: ci_build                  # An internal variable name for this resource
-    source: 'ci-pipeline'               # IMPORTANT: This must exactly match the name of your CI pipeline inside Azure DevOps
+  - pipeline: ci_build                  
+    source: 'ci-pipeline'               
     trigger:
       branches:
         include:
@@ -14,29 +13,36 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  # In a production environment, these should be stored in an Azure DevOps Variable Group
-  azureServiceConnection: 'Linkedin-COnnection'
-  containerRegistry: 'myregistry.azurecr.io'
+  # The new connection for Docker
+  dockerRegistryServiceConnection: 'ACR-Connection' 
+  
+  # The connection you already made for Azure CLI
+  azureServiceConnection: 'Linkedin-COnnection'     
+  
+  # Your Azure resource names (replace with your actual names)
+  containerRegistry: 'your-actual-registry-name.azurecr.io'
   imageRepository: 'linkedin-backend'
-  containerAppName: 'linkedin-connections-backend'
-  resourceGroup: 'my-resource-group'
+  containerAppName: 'your-actual-container-app-name'
+  resourceGroup: 'your-actual-resource-group'
 
 steps:
+# Task 1 uses the Docker Registry connection
 - task: Docker@2
   displayName: 'Build and Push Docker Image to ACR'
   inputs:
     command: 'buildAndPush'
-    containerRegistry: '$(azureServiceConnection)'
+    containerRegistry: '$(dockerRegistryServiceConnection)' 
     repository: '$(imageRepository)'
     dockerfile: 'backend/Dockerfile'
     tags: |
       $(Build.BuildId)
       latest
 
+# Task 2 uses the Azure Resource Manager connection
 - task: AzureCLI@2
   displayName: 'Deploy to Azure Container Apps'
   inputs:
-    azureSubscription: '$(azureServiceConnection)'
+    azureSubscription: '$(azureServiceConnection)'          
     scriptType: 'bash'
     scriptLocation: 'inlineScript'
     inlineScript: |
