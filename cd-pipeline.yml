@@ -39,11 +39,12 @@ steps:
       # Login to ACR using Azure CLI
       az acr login --name $(acrName)
 
-      # Build the Docker image
+      # Build the Docker image using backend/ as context so pyproject.toml & uv.lock are found
       docker build \
         -t $(containerRegistry)/$(imageRepository):$(Build.BuildId) \
         -t $(containerRegistry)/$(imageRepository):latest \
-        -f backend/Dockerfile .
+        -f backend/Dockerfile \
+        backend/
 
       # Push both tags
       docker push $(containerRegistry)/$(imageRepository):$(Build.BuildId)
