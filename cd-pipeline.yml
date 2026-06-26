@@ -13,40 +13,47 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  # The new connection for Docker
-  dockerRegistryServiceConnection: 'ACR-Connection' 
-  
   # The connection you already made for Azure CLI
   azureServiceConnection: 'Linkedin-COnnection'     
   
-  # Your Azure resource names (replace with your actual names)
-  containerRegistry: 'your-actual-registry-name.azurecr.io'
+  # Your actual Azure Container Registry name
+  acrName: 'projectxacr'
+  
+  # Derived full container registry URL
+  containerRegistry: '$(acrName).azurecr.io'
   imageRepository: 'linkedin-backend'
-  containerAppName: 'your-actual-container-app-name'
-  resourceGroup: 'your-actual-resource-group'
+  
+  # Your actual Azure resource names
+  containerAppName: 'project-x-app'
+  resourceGroup: 'project-x-rg'
 
 steps:
-# Step 0: Clear corrupted Docker Hub auth token so public images can be pulled
-- script: docker logout
-  displayName: 'Clear corrupted Docker Hub auth token'
-
-# Task 1 uses the Docker Registry connection
-- task: Docker@2
+# Task 1: Use Azure CLI to log in to ACR, build, and push
+- task: AzureCLI@2
   displayName: 'Build and Push Docker Image to ACR'
   inputs:
-    command: 'buildAndPush'
-    containerRegistry: '$(dockerRegistryServiceConnection)' 
-    repository: '$(imageRepository)'
-    dockerfile: 'backend/Dockerfile'
-    tags: |
-      $(Build.BuildId)
-      latest
+    azureSubscription: '$(azureServiceConnection)'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      # Login to ACR using Azure CLI
+      az acr login --name $(acrName)
 
-# Task 2 uses the Azure Resource Manager connection
+      # Build the Docker image
+      docker build \
+        -t $(containerRegistry)/$(imageRepository):$(Build.BuildId) \
+        -t $(containerRegistry)/$(imageRepository):latest \
+        -f backend/Dockerfile .
+
+      # Push both tags
+      docker push $(containerRegistry)/$(imageRepository):$(Build.BuildId)
+      docker push $(containerRegistry)/$(imageRepository):latest
+
+# Task 2: Deploy to Azure Container Apps
 - task: AzureCLI@2
   displayName: 'Deploy to Azure Container Apps'
   inputs:
-    azureSubscription: '$(azureServiceConnection)'          
+    azureSubscription: '$(azureServiceConnection)'
     scriptType: 'bash'
     scriptLocation: 'inlineScript'
     inlineScript: |
