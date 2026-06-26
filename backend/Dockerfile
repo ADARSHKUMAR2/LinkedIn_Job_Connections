@@ -1,8 +1,6 @@
-# Use a clean, official Python 3.12 slim image
-FROM python:3.12-slim
-
-# Install uv inside the container
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# Use an official uv + Python 3.12 slim image from GitHub Container Registry
+# This avoids Docker Hub authentication issues in CI/CD pipelines
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 # Set working directory
 WORKDIR /app
