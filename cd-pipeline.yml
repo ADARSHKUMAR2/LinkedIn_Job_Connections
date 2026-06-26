@@ -26,6 +26,10 @@ variables:
   resourceGroup: 'your-actual-resource-group'
 
 steps:
+# Step 0: Clear corrupted Docker Hub auth token so public images can be pulled
+- script: docker logout
+  displayName: 'Clear corrupted Docker Hub auth token'
+
 # Task 1 uses the Docker Registry connection
 - task: Docker@2
   displayName: 'Build and Push Docker Image to ACR'
